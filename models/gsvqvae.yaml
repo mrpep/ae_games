@@ -1,0 +1,50 @@
+Model:
+  Architecture:
+  - Input:
+      shape: [16,512]
+      input: x
+      name: spectrogram_in
+  - ExpandDims:
+      axis: -1
+  - Stamp:
+      name: encoder
+      what:
+      - Conv:
+          kernel_size: [[3,32],[3,8],[4,4],[4,4],[4,4]]
+          strides: [[1,4],[1,2],[2,2],[2,2],[1,1]]
+          filters: [128,128,256,512,512]
+          padding: [SAME,SAME,SAME,SAME,VALID]
+      - BatchNormalization: {}
+      - Activation: 
+          activation: gelu
+      times: 5
+  - GumbelSoftmaxVQ:
+      name: discrete_bottleneck
+      codes_per_group: 320
+      groups: 2
+      temperature: 1.0
+      diversity_loss_weight: 0.1
+      vq_dim: 512
+  - Stamp:
+      name: decoder
+      what:
+      - Conv:
+          kernel_size: [[4,4],[4,4],[4,4],[3,8],[3,32]]
+          strides: [[1,1],[2,2],[2,2],[1,2],[1,4]]
+          filters: [512,512,256,128,128]
+          padding: [VALID,SAME,SAME,SAME,SAME]
+          transpose: True
+      - BatchNormalization: {}
+      - Activation: 
+          activation: gelu
+  - Conv2D:
+      name: estimated_spectrogram
+      kernel_size: 1
+      filters: 1
+      activation: relu
+  inputs: [spectrogram_in]
+  outputs: [estimated_spectrogram]
+
+
+
+          

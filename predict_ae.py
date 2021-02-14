@@ -19,11 +19,7 @@ config = {'input_frames': 16,
           'log': True,
           'crop_nyquist': True}
 
-def autoencode(x, model_config, model_weights, config):
-    ae_model = dienen.Model(model_config)
-    ae_model.build()
-    ae_model.core_model.model.summary()
-    ae_model.core_model.model.load_weights(model_weights)
+def autoencode(x, ae_model, config):
 
     input_frames = config['input_frames']
     window_size = config['window_size']

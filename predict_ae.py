@@ -19,7 +19,7 @@ config = {'input_frames': 16,
           'log': True,
           'crop_nyquist': True}
 
-def autoencode(audio_file, model_config, model_weights, config):
+def autoencode(x, model_config, model_weights, config):
     ae_model = dienen.Model(model_config)
     ae_model.build()
     ae_model.core_model.model.summary()
@@ -29,7 +29,6 @@ def autoencode(audio_file, model_config, model_weights, config):
     window_size = config['window_size']
     hop_size = config['hop_size']
 
-    x, fs = librosa.core.load()
     X = stft(x,window_size,hop_size,window=get_default_window(window_size)[0])
     if config['crop_nyquist']:
         X = X[:,:-1]

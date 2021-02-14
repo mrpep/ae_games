@@ -4,6 +4,10 @@ Model:
       shape: [16,512]
       input: x
       name: spectrogram_in
+  - TranslateRange:
+      original_range: [-8, 2]
+      target_range: [0,1]
+      name: translated_spectrogram
   - ExpandDims:
       axis: -1
   - Stamp:
@@ -38,10 +42,14 @@ Model:
       - Activation: 
           activation: gelu
   - Conv2D:
-      name: estimated_spectrogram
       kernel_size: 1
       filters: 1
       activation: relu
+      name: scaled_estimated_spectrogram
+  - TranslateRange:
+      original_range: [0,1]
+      target_range: [-8, 2]
+      name: estimated_spectrogram
   inputs: [spectrogram_in]
   outputs: [estimated_spectrogram]
 

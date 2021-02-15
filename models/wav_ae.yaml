@@ -1,0 +1,70 @@
+Model:
+  Architecture:
+  - Input:
+      shape: [4096]
+      input: x
+      name: wav_in
+  - ExpandDims:
+      axis: -1
+  - Conv:
+      kernel_size: 256
+      filters: 512
+      strides: 32
+      use_bias: False
+      name: neural_wav_to_tf
+      padding: same
+  - Stamp:
+      name: encoder
+      what:
+      - Conv:
+          kernel_size: 4
+          dilation_rate: [1,2,4,8,1,2,4,8,1,1,1,1,1,1,1]
+          filters: [64,64,64,64,128,128,128,128,128,128,128,128,256,256,256]
+          padding: SAME
+          pooling: [0,0,0,2,0,0,0,2,0,2,0,2,0,2,0]
+      - BatchNormalization: {}
+      - Activation:
+          activation: gelu
+      times: 15
+  - Flatten: {}
+  - Dense:
+      name: embedding
+      units: 1024
+  - Reshape:
+      target_shape: [4,256]
+  - Stamp:
+      name: decoder
+      what:
+      - Conv:
+          kernel_size: 4
+          dilation_rate: [1,1,1,1,1,1,1,8,4,2,1,8,4,2,1]
+          filters: [256,256,256,128,128,128,128,128,128,128,128,64,64,64,64]
+          padding: same
+          upsampling: [0,2,0,2,0,2,0,2,0,0,0,2,0,0,0]
+          transpose: True
+      - BatchNormalization: {}
+      - Activation:
+          activation: gelu
+      times: 15
+  - Conv:
+      filters: 512
+      padding: same
+      kernel_size: 4
+  - Conv:
+      transpose: True
+      kernel_size: 256
+      filters: 1
+      strides: 32
+      use_bias: False
+      padding: same
+      activation: tanh
+  - Squeeze:
+      name: estimated_output
+      axis: -1
+  inputs: [wav_in]
+  outputs: [estimated_output]
+
+
+
+
+          

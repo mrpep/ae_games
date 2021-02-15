@@ -65,3 +65,34 @@ class PGHIGenerator(Sequence):
 
     def __len__(self):
         return len(self.data)//self.batch_size
+
+class WavGenerator(Sequence):
+    def __init__(self,audio_metadata,batch_size=16,debug_times=False,shape_batches=None):
+        self.data = audio_metadata
+        self.index = np.array(self.data.index)
+        self.batch_size = batch_size
+        self.debug_times = debug_times
+        self.shape_batches = shape_batches
+
+    def read_wav(self,x):
+        try:
+            return sf.read(x['file_path'],start=x['start'],stop=x['end'])[0]
+        except:
+            return np.zeros((x['end']-x['start']))
+
+    def __getitem__(self,i):
+        if not self.debug_times:
+            batch_idxs = np.take(self.index,np.arange(i*self.batch_size,(i+1)*self.batch_size),mode='wrap')
+            batch_df = self.data.loc[batch_idxs]
+            batch_x = batch_df.apply(lambda x: self.read_wav(x),axis=1)
+            batch_x = np.stack(batch_x)
+        else:
+            batch_x = np.random.uniform(size=self.shape_batches)
+
+        return batch_x, batch_x
+
+    def on_epoch_end(self):
+        self.index = np.random.permutation(self.index)
+
+    def __len__(self):
+        return len(self.data)//self.batch_size

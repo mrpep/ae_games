@@ -21,27 +21,33 @@ config = {'input_frames': 16,
 
 def autoencode(x, ae_model, config):
 
-    input_frames = config['input_frames']
-    window_size = config['window_size']
-    hop_size = config['hop_size']
+    input_frames = config.get('input_frames',None)
+    window_size = config.get('window_size',None)
+    hop_size = config.get('hop_size',None)
+    signal_type = config.get('signal_type','spectrogram_pghi')
 
-    X = stft(x,window_size,hop_size,window=get_default_window(window_size)[0])
-    if config['crop_nyquist']:
-        X = X[:,:-1]
+    if signal_type == 'spectrogram_pghi':
+        X = stft(x,window_size,hop_size,window=get_default_window(window_size)[0])
+        if config['crop_nyquist']:
+            X = X[:,:-1]
 
-    X_frames = np.array([X[i:i+input_frames] for i in range(0,len(X)-input_frames,input_frames)])
-    if config['log']:
-        X_frames = np.log(X_frames+1e-16)
-    Y_frames = ae_model.core_model.model.predict(X_frames)
-    Y_frames = np.squeeze(Y_frames)
-    if config['crop_nyquist']:
-        Y_frames = np.pad(Y_frames,((0,0),(0,0),(0,1))) + 1e-16
-    if config['log']:
-        Y_frames = np.exp(Y_frames)
-    Y = np.concatenate(Y_frames)
+        X_frames = np.array([X[i:i+input_frames] for i in range(0,len(X)-input_frames,input_frames)])
+        if config['log']:
+            X_frames = np.log(X_frames+1e-16)
+        Y_frames = ae_model.core_model.model.predict(X_frames)
+        Y_frames = np.squeeze(Y_frames)
+        if config['crop_nyquist']:
+            Y_frames = np.pad(Y_frames,((0,0),(0,0),(0,1))) + 1e-16
+        if config['log']:
+            Y_frames = np.exp(Y_frames)
+        Y = np.concatenate(Y_frames)
 
-    synth_window = calculate_synthesis_window(win_length=window_size, hop_length=hop_size, n_fft=window_size,window=get_default_window(window_size)[0])
-    Y = np.abs(Y)*np.exp(1.0j*pghi(Y,window_size,hop_size,synthesis_window=synth_window))
-    y = istft(Y,window_size,hop_size,synthesis_window=synth_window)
+        synth_window = calculate_synthesis_window(win_length=window_size, hop_length=hop_size, n_fft=window_size,window=get_default_window(window_size)[0])
+        Y = np.abs(Y)*np.exp(1.0j*pghi(Y,window_size,hop_size,synthesis_window=synth_window))
+        y = istft(Y,window_size,hop_size,synthesis_window=synth_window)
+    elif signal_type == 'raw_audio':
+        x_frames = np.array([x[i:i+input_frames] for i in range(0,len(x)-input_frames,input_frames)])
+        y_frames = ae_model.core_model.model.predict(x_frames)
+        y = np.squeeze(np.concatenate(y_frames))
 
     return y
